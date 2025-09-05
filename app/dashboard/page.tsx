@@ -92,6 +92,13 @@ export default function Dashboard() {
     window.location.href = "/login"
   }
 
+  // Handle enter key
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      addTask()
+    }
+  }
+
   // Filtered tasks
   const filteredTasks = tasks.filter(task => {
     if (filter === "completed") return task.is_completed
@@ -99,94 +106,168 @@ export default function Dashboard() {
     return true
   })
 
+  const completedCount = tasks.filter(t => t.is_completed).length
+  const totalCount = tasks.length
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-white to-gray-200 flex items-center justify-center p-6">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8 border border-gray-200 relative">
-        <div className="relative z-10">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-extrabold text-black drop-shadow-md">📝 My Tasks</h1>
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+                <span className="text-white font-bold text-lg">T</span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">TaskFlow</h1>
+                <p className="text-sm text-gray-500">{user?.email}</p>
+              </div>
+            </div>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 rounded-xl bg-red-400 hover:bg-red-500 text-black font-semibold shadow-md"
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
-              🚪 Logout
+              Sign out
             </button>
           </div>
+        </div>
+      </div>
 
-          {/* Add Task */}
-          <div className="flex mb-6">
-            <input
-              type="text"
-              placeholder="Add a new task..."
-              value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
-              className="border border-gray-300 p-3 flex-grow rounded-xl text-black font-medium shadow-inner focus:ring-4 focus:ring-blue-300 focus:outline-none"
-            />
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="bg-gray-50 rounded-2xl p-6">
+            <div className="text-3xl font-bold text-gray-900">{totalCount}</div>
+            <div className="text-sm text-gray-600 mt-1">Total Tasks</div>
+          </div>
+          <div className="bg-blue-50 rounded-2xl p-6">
+            <div className="text-3xl font-bold text-blue-600">{totalCount - completedCount}</div>
+            <div className="text-sm text-blue-600 mt-1">Pending</div>
+          </div>
+          <div className="bg-green-50 rounded-2xl p-6">
+            <div className="text-3xl font-bold text-green-600">{completedCount}</div>
+            <div className="text-sm text-green-600 mt-1">Completed</div>
+          </div>
+        </div>
+
+        {/* Add Task */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6 shadow-sm">
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="What needs to be done?"
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              />
+            </div>
             <button
               onClick={addTask}
-              className="ml-3 px-6 py-3 rounded-xl font-semibold text-black bg-gradient-to-r from-blue-400 to-purple-400 shadow-lg hover:scale-105 hover:shadow-xl transition-transform"
+              disabled={!newTask.trim()}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors"
             >
-              ➕ Add
+              Add Task
             </button>
           </div>
+        </div>
 
-          {/* Filter Tabs */}
-          <div className="flex justify-center gap-4 mb-6">
-            {["all", "completed", "pending"].map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f as "all" | "completed" | "pending")}
-                className={`px-4 py-2 rounded-xl font-semibold shadow-md ${
-                  filter === f ? "bg-blue-700 text-white" : "bg-blue-300 text-black"
+        {/* Filter Tabs */}
+        <div className="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1">
+          {[
+            { key: "all", label: "All Tasks", count: totalCount },
+            { key: "pending", label: "Pending", count: totalCount - completedCount },
+            { key: "completed", label: "Completed", count: completedCount }
+          ].map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => setFilter(key as "all" | "completed" | "pending")}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                filter === key
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              {label} {count > 0 && `(${count})`}
+            </button>
+          ))}
+        </div>
+
+        {/* Task List */}
+        <div className="space-y-3">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : filteredTasks.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">✨</div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {filter === "all" ? "No tasks yet" : `No ${filter} tasks`}
+              </h3>
+              <p className="text-gray-500">
+                {filter === "all" 
+                  ? "Add your first task above to get started"
+                  : `You don't have any ${filter} tasks right now`
+                }
+              </p>
+            </div>
+          ) : (
+            filteredTasks.map(task => (
+              <div
+                key={task.id}
+                className={`group bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all ${
+                  task.is_completed ? "opacity-75" : ""
                 }`}
               >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
-          </div>
-
-          {/* Task List */}
-          {loading ? (
-            <p className="text-black text-center">Loading...</p>
-          ) : filteredTasks.length === 0 ? (
-            <p className="text-black text-center italic">No tasks here ✨</p>
-          ) : (
-            <ul className="space-y-4">
-              {filteredTasks.map(task => (
-                <li
-                  key={task.id}
-                  className="flex justify-between items-center bg-gray-50 p-4 rounded-2xl shadow-md hover:shadow-xl transition"
-                >
-                  <span
-                    className={`cursor-pointer font-medium text-black ${
-                      task.is_completed ? "line-through opacity-60" : ""
-                    }`}
-                    onClick={() => toggleTask(task.id, task.is_completed)}
-                  >
-                    {task.title}
-                  </span>
-                  <div className="flex gap-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1">
                     <button
                       onClick={() => toggleTask(task.id, task.is_completed)}
-                      className={`px-4 py-2 rounded-lg font-semibold text-black shadow-md transition ${
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
                         task.is_completed
-                          ? "bg-green-300 hover:bg-green-400"
-                          : "bg-yellow-300 hover:bg-yellow-400"
+                          ? "bg-green-500 border-green-500"
+                          : "border-gray-300 hover:border-green-500"
                       }`}
                     >
-                      {task.is_completed ? "✅ Done" : "⏳ Pending"}
+                      {task.is_completed && (
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                    <span
+                      className={`text-gray-900 font-medium cursor-pointer ${
+                        task.is_completed ? "line-through text-gray-500" : ""
+                      }`}
+                      onClick={() => toggleTask(task.id, task.is_completed)}
+                    >
+                      {task.title}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => toggleTask(task.id, task.is_completed)}
+                      className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                        task.is_completed
+                          ? "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                          : "bg-green-100 text-green-700 hover:bg-green-200"
+                      }`}
+                    >
+                      {task.is_completed ? "Undo" : "Complete"}
                     </button>
                     <button
                       onClick={() => deleteTask(task.id)}
-                      className="px-4 py-2 rounded-lg bg-red-300 hover:bg-red-400 text-black font-semibold shadow-md"
+                      className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
                     >
-                      🗑 Delete
+                      Delete
                     </button>
                   </div>
-                </li>
-              ))}
-            </ul>
+                </div>
+              </div>
+            ))
           )}
         </div>
       </div>
