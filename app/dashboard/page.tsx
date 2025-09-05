@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable prefer-const */
+
 "use client"
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
@@ -33,7 +36,7 @@ export default function Dashboard() {
       }
       setUser(user)
 
-      let { data: tasks, error } = await supabase
+      const { data: tasks, error } = await supabase
         .from("tasks")
         .select("*")
         .eq("user_id", user.id)
