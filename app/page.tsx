@@ -112,7 +112,7 @@ export default function Home() {
             Ready to get organized?
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Join thousands of users who've simplified their task management with TaskFlow.
+            Join thousands of users who&apos;ve simplified their task management with TaskFlow.
           </p>
           <Link
             href="/login"
