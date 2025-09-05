@@ -33,20 +33,28 @@ export default function Dashboard() {
     if (!supabase) return // Prevent SSR crash
 
     const getData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
+      const { data, error } = await supabase.auth.getUser()
+      if (error) {
+        console.error(error)
         window.location.href = "/login"
         return
       }
-      setUser(user)
 
-      const { data: tasksData, error } = await supabase
+      const currentUser = data.user
+      if (!currentUser) {
+        window.location.href = "/login"
+        return
+      }
+
+      setUser(currentUser as User) // <-- type assertion fixes the TS error
+
+      const { data: tasksData, error: tasksError } = await supabase
         .from("tasks")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", currentUser.id)
         .order("created_at", { ascending: false })
 
-      if (error) console.error(error)
+      if (tasksError) console.error(tasksError)
       else setTasks(tasksData || [])
 
       setLoading(false)
