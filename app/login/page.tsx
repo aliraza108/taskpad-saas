@@ -12,22 +12,16 @@ export default function LoginPage() {
   const handleLogin = async () => {
     setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      alert(error.message)
-    } else {
-      router.push("/dashboard") // ✅ go to dashboard
-    }
+    if (error) alert(error.message)
+    else router.push("/dashboard")
     setLoading(false)
   }
 
   const handleSignup = async () => {
     setLoading(true)
     const { error } = await supabase.auth.signUp({ email, password })
-    if (error) {
-      alert(error.message)
-    } else {
-      router.push("/dashboard") // ✅ go to dashboard after signup
-    }
+    if (error) alert(error.message)
+    else router.push("/dashboard")
     setLoading(false)
   }
 
@@ -41,7 +35,7 @@ export default function LoginPage() {
           placeholder="Email"
           className="border border-gray-300 p-3 mb-3 w-full rounded-xl text-black focus:ring-2 focus:ring-blue-300 focus:outline-none"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={e => setEmail(e.target.value)}
         />
 
         <input
@@ -49,7 +43,7 @@ export default function LoginPage() {
           placeholder="Password"
           className="border border-gray-300 p-3 mb-6 w-full rounded-xl text-black focus:ring-2 focus:ring-blue-300 focus:outline-none"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={e => setPassword(e.target.value)}
         />
 
         <button
