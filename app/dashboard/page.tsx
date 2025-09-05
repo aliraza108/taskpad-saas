@@ -1,7 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
-
 interface Task {
   id: string
   title: string
@@ -17,41 +17,30 @@ interface User {
 }
 
 export default function Dashboard() {
-  const [tasks, setTasks] = useState<Task[]>([])
+  const [tasks, setTasks] = useState<any[]>([])
   const [newTask, setNewTask] = useState("")
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<User | null>(null)
-  const [filter, setFilter] = useState<"all" | "completed" | "pending">("all")
+  const [user, setUser] = useState<any>(null)
+  const [filter, setFilter] = useState("all") // all | completed | pending
 
+  // Fetch user + tasks
   useEffect(() => {
     const getData = async () => {
-      // Fetch the user safely
-      const userResponse = await supabase.auth.getUser()
-      const supabaseUser = userResponse.data.user
-
-      if (!supabaseUser) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
         window.location.href = "/login"
         return
       }
+      setUser(user)
 
-      // Properly typed user
-      const typedUser: User = {
-        id: supabaseUser.id,
-        email: supabaseUser.email || "",
-        ...supabaseUser,
-      }
-
-      setUser(typedUser)
-
-      // Fetch tasks
-      const { data: tasksData, error: tasksError } = await supabase
-        .from<Task>("tasks")
+      let { data: tasks, error } = await supabase
+        .from("tasks")
         .select("*")
-        .eq("user_id", typedUser.id)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
 
-      if (tasksError) console.error(tasksError)
-      else setTasks(tasksData || [])
+      if (error) console.error(error)
+      else setTasks(tasks || [])
 
       setLoading(false)
     }
@@ -59,40 +48,56 @@ export default function Dashboard() {
     getData()
   }, [])
 
+  // Add new task
   const addTask = async () => {
-    if (!newTask.trim() || !user) return
+    if (!newTask.trim()) return
 
-    const { data: insertedTasks, error } = await supabase
-      .from<Task>("tasks")
+    const { data, error } = await supabase
+      .from("tasks")
       .insert([{ title: newTask, user_id: user.id }])
-      .select("*")
+      .select()
 
-    if (error) console.error("Insert Error:", error)
-    else if (insertedTasks) setTasks([...insertedTasks, ...tasks])
+    if (error) {
+      console.error("Insert Error:", error)
+    } else if (data) {
+      setTasks([...data, ...tasks])
+    }
 
     setNewTask("")
   }
 
+  // Toggle complete
   const toggleTask = async (id: string, isCompleted: boolean) => {
     const { error } = await supabase
       .from("tasks")
       .update({ is_completed: !isCompleted })
       .eq("id", id)
 
-    if (!error) setTasks(tasks.map(t => (t.id === id ? { ...t, is_completed: !isCompleted } : t)))
+    if (!error) {
+      setTasks(tasks.map(t => t.id === id ? { ...t, is_completed: !isCompleted } : t))
+    }
   }
 
+  // Delete task
   const deleteTask = async (id: string) => {
-    const { error } = await supabase.from("tasks").delete().eq("id", id)
-    if (!error) setTasks(tasks.filter(t => t.id !== id))
+    const { error } = await supabase
+      .from("tasks")
+      .delete()
+      .eq("id", id)
+
+    if (!error) {
+      setTasks(tasks.filter(t => t.id !== id))
+    }
   }
 
+  // Logout
   const handleLogout = async () => {
     await supabase.auth.signOut()
     window.location.href = "/login"
   }
 
-  const filteredTasks = tasks.filter(task => {
+  // Filtered tasks
+  const filteredTasks = tasks.filter((task) => {
     if (filter === "completed") return task.is_completed
     if (filter === "pending") return !task.is_completed
     return true
@@ -119,7 +124,7 @@ export default function Dashboard() {
               type="text"
               placeholder="Add a new task..."
               value={newTask}
-              onChange={e => setNewTask(e.target.value)}
+              onChange={(e) => setNewTask(e.target.value)}
               className="border border-gray-300 p-3 flex-grow rounded-xl text-black font-medium shadow-inner focus:ring-4 focus:ring-blue-300 focus:outline-none"
             />
             <button
@@ -132,10 +137,10 @@ export default function Dashboard() {
 
           {/* Filter Tabs */}
           <div className="flex justify-center gap-4 mb-6">
-            {["all", "completed", "pending"].map(f => (
+            {["all", "completed", "pending"].map((f) => (
               <button
                 key={f}
-                onClick={() => setFilter(f as "all" | "completed" | "pending")}
+                onClick={() => setFilter(f)}
                 className={`px-4 py-2 rounded-xl font-semibold shadow-md ${
                   filter === f ? "bg-blue-700" : "bg-blue-300"
                 }`}
@@ -149,10 +154,12 @@ export default function Dashboard() {
           {loading ? (
             <p className="text-black-600 text-center">Loading...</p>
           ) : filteredTasks.length === 0 ? (
-            <p className="text-black-500 text-center italic">No tasks here ✨</p>
+            <p className="text-black-500 text-center italic">
+              No tasks here ✨
+            </p>
           ) : (
             <ul className="space-y-4">
-              {filteredTasks.map(task => (
+              {filteredTasks.map((task) => (
                 <li
                   key={task.id}
                   className="flex justify-between items-center bg-gray-50 p-4 rounded-2xl shadow-md hover:shadow-xl transition"
