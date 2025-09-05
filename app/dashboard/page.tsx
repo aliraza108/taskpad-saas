@@ -25,24 +25,16 @@ export default function Dashboard() {
 
   useEffect(() => {
     const getData = async () => {
-      // Fetch the user
-      const {
-        data: { user: supabaseUser },
-        error: userError,
-      } = await supabase.auth.getUser()
-
-      if (userError) {
-        console.error(userError)
-        window.location.href = "/login"
-        return
-      }
+      // Fetch the user safely
+      const userResponse = await supabase.auth.getUser()
+      const supabaseUser = userResponse.data.user
 
       if (!supabaseUser) {
         window.location.href = "/login"
         return
       }
 
-      // Properly type the user
+      // Properly typed user
       const typedUser: User = {
         id: supabaseUser.id,
         email: supabaseUser.email || "",
