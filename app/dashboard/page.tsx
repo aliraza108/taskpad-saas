@@ -25,23 +25,40 @@ export default function Dashboard() {
 
   useEffect(() => {
     const getData = async () => {
+      // Fetch the user
       const {
-        data: { user },
+        data: { user: supabaseUser },
+        error: userError,
       } = await supabase.auth.getUser()
 
-      if (!user) {
+      if (userError) {
+        console.error(userError)
         window.location.href = "/login"
         return
       }
-      setUser(user)
 
-      const { data: tasksData, error } = await supabase
-        .from("tasks")
+      if (!supabaseUser) {
+        window.location.href = "/login"
+        return
+      }
+
+      // Properly type the user
+      const typedUser: User = {
+        id: supabaseUser.id,
+        email: supabaseUser.email || "",
+        ...supabaseUser,
+      }
+
+      setUser(typedUser)
+
+      // Fetch tasks
+      const { data: tasksData, error: tasksError } = await supabase
+        .from<Task>("tasks")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", typedUser.id)
         .order("created_at", { ascending: false })
 
-      if (error) console.error(error)
+      if (tasksError) console.error(tasksError)
       else setTasks(tasksData || [])
 
       setLoading(false)
@@ -53,16 +70,13 @@ export default function Dashboard() {
   const addTask = async () => {
     if (!newTask.trim() || !user) return
 
-    const { data, error } = await supabase
-      .from("tasks")
+    const { data: insertedTasks, error } = await supabase
+      .from<Task>("tasks")
       .insert([{ title: newTask, user_id: user.id }])
-      .select<Task>()
+      .select("*")
 
-    if (error) {
-      console.error("Insert Error:", error)
-    } else if (data) {
-      setTasks([...data, ...tasks])
-    }
+    if (error) console.error("Insert Error:", error)
+    else if (insertedTasks) setTasks([...insertedTasks, ...tasks])
 
     setNewTask("")
   }
@@ -73,16 +87,12 @@ export default function Dashboard() {
       .update({ is_completed: !isCompleted })
       .eq("id", id)
 
-    if (!error) {
-      setTasks(tasks.map(t => (t.id === id ? { ...t, is_completed: !isCompleted } : t)))
-    }
+    if (!error) setTasks(tasks.map(t => (t.id === id ? { ...t, is_completed: !isCompleted } : t)))
   }
 
   const deleteTask = async (id: string) => {
     const { error } = await supabase.from("tasks").delete().eq("id", id)
-    if (!error) {
-      setTasks(tasks.filter(t => t.id !== id))
-    }
+    if (!error) setTasks(tasks.filter(t => t.id !== id))
   }
 
   const handleLogout = async () => {
@@ -100,6 +110,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-gray-100 via-white to-gray-200 flex items-center justify-center p-6">
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8 border border-gray-200 relative">
         <div className="relative z-10">
+          {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-4xl font-extrabold text-black drop-shadow-md">📝 My Tasks</h1>
             <button
@@ -110,6 +121,7 @@ export default function Dashboard() {
             </button>
           </div>
 
+          {/* Add Task */}
           <div className="flex mb-6">
             <input
               type="text"
@@ -126,6 +138,7 @@ export default function Dashboard() {
             </button>
           </div>
 
+          {/* Filter Tabs */}
           <div className="flex justify-center gap-4 mb-6">
             {["all", "completed", "pending"].map(f => (
               <button
@@ -140,6 +153,7 @@ export default function Dashboard() {
             ))}
           </div>
 
+          {/* Task List */}
           {loading ? (
             <p className="text-black-600 text-center">Loading...</p>
           ) : filteredTasks.length === 0 ? (
